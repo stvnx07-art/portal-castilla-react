@@ -1082,71 +1082,151 @@ ol {
    to hide it (the burger + the hero wordmark already provide
    branding). The wordmark stays in state 1 (big white centered)
    on the hero, so the brand is always present in some form. */
-@media (max-width: 767px) {
-  .header__wordmark {
-    left: 56px; /* burger ends at ~52px (12+28+12 padding) */
-    top: 1.65rem;
-    /* On mobile, the wordmark is ALWAYS in the navbar slot —
-       no interpolation, no state 1 (centered big white mark).
-       Reason: at <768px the desktop interpolation produces a
-       half-state (mid-color, mid-size, mid-translate) for the
-       first half of the scroll which reads as a "ghost" of the
-       wordmark floating over the content. The brand identity is
-       carried by:
-         - the hero wordmark (the .hero__wordmark layer in
-           Hero.css, reserved for v4+) which is the big centered
-           brand mark visible on the hero
-         - the navbar wordmark (this rule) which is the persistent
-           brand tag in the nav from page-load
-       So in mobile we collapse the interpolation to the navbar
-       endpoint from the start. The preloader handoff still gives
-       the wordmark its entrance rise+blur feel (Header.jsx line
-       30-44), but after that the wordmark stays put.
 
-       The hero wordmark will be reactivated in a future v4 —
-       for now the hero shows the 3D scene (dental chair) as
-       the dominant visual. The navbar wordmark provides
-       persistent branding across all sections. */
-    transform: none !important;
-    font-size: 12px !important;
-    letter-spacing: 0.04em !important;
-    color: var(--c-ink) !important;
-    font-weight: 500 !important;
-    opacity: 1 !important;
-  }
-}
+/* ── Mobile wordmark (jun-2026 v6) ─────────────────────────────────────
+   Tablet portrait + mobile. The wordmark must be visible AND
+   coherent across the whole scroll — not just at the navbar slot.
+   The previous version collapsed to a single static "navbar" state
+   because the desktop interpolation produced ghost mid-states on
+   small viewports, but that left the hero visually empty (no brand
+   mark on top of the 3D scene, no copy at all).
 
-/* Tablet portrait (768-1024px) — the desktop wordmark math
-   `left: calc(4vw + 44px + 12px)` (= ~76px at 768) plus the
-   16px state-2 wordmark still produces a navbar tag that fits,
-   but the state-1 transform interpolation
-   `translate(50vw - 76px - 50%, ...)` evaluates to a NEGATIVE
-   translate on viewports < ~960px because the wordmark's own
-   width eats the gap. Without an override the wordmark drifts
-   left during the first half of the scroll and pushes the
-   page body to scroll horizontally (the offending IMG
-   measurements in the audit at 768px were the symptom).
+   Solution: keep the desktop-style 2-state interpolation (hero →
+   navbar) but rewrite the math so it's robust on small viewports:
 
-   Apply the same collapse as mobile: anchor to left:84px
-   (burger + a bit more gap on tablet), keep the navbar-end
-   font-size, and reset the transform. State 1 (centered big
-   white) is preserved on desktop ≥1024px where there's room. */
+   1. X position: never translate in X. The desktop formula
+      `translate(inv * (50vw - (4vw + 44px + 12px) - 50%))` goes
+      NEGATIVE on viewports < ~960px because the wordmark's own
+      width eats the gap. We use `left` (set per breakpoint) and
+      keep the X translate at 0. The wordmark anchors to a fixed
+      X slot and only moves vertically.
+
+   2. Y position: interpolate from 50vh - 1.65rem - 50%
+      (state 1 = centered in viewport, accounting for the
+      navbar height) to 0 (state 2 = navbar slot, no Y offset).
+
+   3. Font-size: fluid clamp(11px, 5.5vw, 22px). At 320px viewport
+      = 17.6px (state 1), at 375px = 20.6px, at 430px (iPhone Pro
+      Max) = 22px (clamped). The desktop 5.5vw would overflow at
+      480px+, but the upper cap at 22px keeps it from getting
+      too large on bigger mobile screens. At 480px viewport the
+      font is 22px; at 600px (small tablet) the same 22px reads
+      as a proper hero wordmark.
+
+   4. Letter-spacing: fluid clamp(1.5px, 1.8vw, 8px). Tighter at
+      small viewports (less horizontal real estate) and capped at
+      8px so it never goes too wide.
+
+   5. Color: keeps the desktop interpolation (white → ink) so the
+      wordmark visibly transforms as the user scrolls. The "ghost
+      mid-state" problem the previous version tried to fix was
+      caused by the X translate, not the color interpolation.
+
+   6. Font-weight: also keeps the desktop interpolation (700 →
+      500) for the same reason — the "ghost" was the X drift, not
+      the weight change.
+
+   7. Opacity: stays at 1 throughout. The desktop uses implicit
+      1; we make it explicit to avoid any ancestor opacity issue.
+
+   8. Wrap to 2 lines at <380px (iPhone SE 1st gen, Galaxy A): the
+      clamp's 11px lower bound + tight 1.5px letter-spacing still
+      produces "PORTALDE CASTILLA" (134px) at 320px which fits in
+      the 320px viewport BUT only with 0 margin. Wrapping to
+      "PORTAL" / "DE CASTILLA" gives breathing room and matches
+      the AIRCENTER pattern of stacking the brand on a tight
+      mobile hero. */
+
+/* Tablet portrait: 768-1023px. The wordmark interpolates from a
+   smaller centered hero state (24px) to a navbar tag (16px) on
+   the left side, with no X drift. Same math as mobile but with
+   a bigger state-1 size to fill the wider viewport. */
 @media (min-width: 768px) and (max-width: 1023px) {
   .header__wordmark {
     left: 84px;
-    transform: none !important;
-    font-size: 14px !important;
-    letter-spacing: 0.05em !important;
+    top: 1.65rem;
+    /* X stays at 0; Y interpolates from centered (state 1) to
+       navbar slot (state 2). Same -50vh+1.65rem+50% formula as
+       mobile so the centered position is exactly at viewport
+       mid-line. */
+    transform: translate(
+      0,
+      calc( var(--inv) * ( -50vh + 1.65rem + 50% ) )
+    ) !important;
+    font-size: calc( (var(--inv) * clamp(18px, 4vw, 24px)) + (var(--progEff) * 16px) ) !important;
+    letter-spacing: calc( (var(--inv) * 0.08em) + (var(--progEff) * 0.05em) ) !important;
   }
 }
 
-@media (max-width: 479px) {
-  /* Very small viewports: the wordmark is too small to read AND
-     competes with the burger for the 56px slot. Hide it entirely
-     in state 2 — the user still has the burger for navigation and
-     the hero wordmark for branding. Saves 60-80px of horizontal
-     real estate that the phone CTA needs. */
-  .header__wordmark--visible { opacity: 0; }
+/* Mobile: <768px. Includes iPhone SE (320), iPhone 12/13/14
+   (375), iPhone Pro Max (430), and everything in between. The
+   fluid clamp + no-X-drift formula ensures the wordmark fits and
+   reads correctly at any width. */
+@media (max-width: 767px) {
+  .header__wordmark {
+    /* The wordmark is a HERO ELEMENT on mobile, not a navbar
+       element. It starts centered in the hero (AIRCENTER
+       pattern) and fades out as the user scrolls past the hero
+       — leaving the navbar with just burger + CTA (clean,
+       uncluttered, no need to fit a 17-char wordmark between
+       the burger and the phone CTA on a 320px viewport).
+
+       Why not interpolate to a navbar state? CSS can't
+       interpolate to `auto` width or change `text-align`
+       smoothly, and forcing the wordmark to stay visible in
+       the navbar at small viewports pushes the phone CTA off-
+       screen or forces the wordmark to wrap (worse UX than
+       fading out and letting the brand live in the hero). */
+    left: 0;
+    right: 0;
+    width: 100%;
+    text-align: center;
+    padding: 0 8px; /* Margin to viewport edges, prevents edge-touch */
+    /* Position + transform: centered in viewport (state 1, hero).
+       The combination of `top: 50%` + `transform: translateY(-50%)`
+       is the standard CSS centering pattern. The wordmark's
+       visual center sits at the vertical mid-line of the
+       viewport.
+
+       The base rule sets top: 2.15rem and a later
+       @media (max-width: 768px) rule sets top: 2.05rem. We
+       use !important to ensure our centering wins. */
+    top: 50% !important;
+    transform: translate(0, -50%) !important;
+    /* State 1 (hero) = fluid clamp 11px-22px. */
+    font-size: clamp(11px, 5.5vw, 22px) !important;
+    /* State 1 letter-spacing tight enough to fit "PORTALDE CASTILLA"
+       at 320px with the 11px floor of the font clamp. */
+    letter-spacing: clamp(1.5px, 1.8vw, 8px) !important;
+    /* Fade out as the user scrolls past the hero. Opacity goes
+       from 1 (state 1) to 0 (state 2). The fade is in the first
+       50% of the scroll (--progEff formula), so by the time
+       the user reaches the navbar, the wordmark is invisible.
+
+       The desktop rule `.header__wordmark--visible { opacity: 1 }`
+       at line ~1281 would otherwise win by cascade order. We
+       use !important to override it — this is a deliberate,
+       scoped exception (only inside the mobile media query)
+       to keep the desktop behavior untouched. */
+    opacity: calc( 1 - var(--progEff, 0) ) !important;
+  }
+}
+
+/* Very small phones (<380px): wrap to 2 lines so PORTAL sits
+   on top and DE CASTILLA on the bottom. This gives breathing
+   room on iPhone SE 1st gen (320px) and Galaxy A series where
+   the single-line "PORTALDE CASTILLA" would be visually tight
+   even with the reduced letter-spacing. */
+@media (max-width: 379px) {
+  .header__wordmark {
+    white-space: normal;
+    line-height: 1.05;
+    /* Slightly tighter letter-spacing at very small viewports
+       so the 2 wrapped lines ("PORTAL" / "DE CASTILLA") don't
+       drift to the viewport edges. At 320px: 1vw = 3.2px
+       letter-spacing keeps both lines visually balanced. */
+    letter-spacing: clamp(0.5px, 1vw, 3px) !important;
+  }
 }
 
 /* ─── WORDMARK ENTER TRANSITION (post-preloader handoff) ────── */
