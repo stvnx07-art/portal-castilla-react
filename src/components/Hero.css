@@ -1,0 +1,302 @@
+/* ─────────────────────────────────────────────────────────────
+   HERO — AirCenter pattern (HERO-DEEP-DIVE §1, §2, §5)
+   - Hero wrapper 200svh (1.5 viewports of dwell time)
+   - Inner sticky wrapper (100svh) holds bg-layer / 3D canvas / letters / content
+   - 4 SVG letters (CDPC) with independent parallax via --hero-progress
+   - 3D dental chair (R3F + drei) rotates on scroll, synced to Lenis rAF
+   - Content fades on scroll (landingIntroFade pattern)
+   ───────────────────────────────────────────────────────────── */
+
+/* sr-only utility — visible to crawlers, not to users */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hero {
+  position: relative;
+  width: 100%;
+  height: 300svh; /* Track de 3 etapas (jun-2026 v5):
+                     - 0→100vh:  intro/scroll del usuario
+                     - 100vh→200vh: el sticky queda CONGELADO (la animación 3D
+                                     ya terminó y la silla está en estado final
+                                     mientras el usuario sigue scrolleando)
+                     - 200vh→300vh: barrido de la cortina — WhyUs (margin-top:
+                                     -100svh + z-index 2) sube tapando el hero
+                     Ver Hero.jsx scroll handler para la fórmula de progreso
+                     que divide entre window.innerHeight (no heroHeight). */
+  background: var(--c-ink-2);
+  /* Scrollover: z-index 1 crea un stacking context para que el sticky
+     interno quede "atrapado" en este nivel. WhyUs tiene z-index 2, así
+     sube cubriendo al hero durante la 3a etapa (200vh→300vh). */
+  z-index: 1;
+}
+
+/* ── Inner sticky wrapper (stays pinned while user scrolls through 200svh) ── */
+.hero__sticky {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  display: block;
+}
+
+/* All visual layers inside the sticky: absolute, fill the wrapper.
+   NOTE: .hero__bg-layer and .hero__bg-layer-floor are NOT in this
+   list — they're declared display:none below (legacy 2D layers
+   that the R3F 3D scene replaces). */
+.hero__3d,
+.hero__vignette,
+.hero__letters,
+.hero__content,
+.hero__scroll-hint,
+.hero__wordmark {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+/* ── Layer 1 — CSS-only background (legacy, replaced by the R3F
+   scene in DentalScene). The .hero__bg-layer and .hero__bg-layer-floor
+   elements are still in the JSX (Hero.jsx) so the DentalScene slot
+   (hero__3d) is the only one rendered with visible content, but
+   these 2D layers are dead code kept for layout stability. Hiding
+   them rather than removing them avoids any Layout-Engine surprise
+   from re-flowing the flex children. The corresponding JSX nodes
+   can be removed in a future cleanup. */
+.hero__bg-layer,
+.hero__bg-layer-floor,
+.hero__letters {
+  display: none;
+}
+
+/* ── Layer 2 — R3F 3D scene (dental chair) ── */
+/* Single source of truth for the 3D layer positioning. The
+   previous version of this file declared .hero__3d three times
+   (the umbrella rule above + 2 redundant ones) which produced
+   conflicting transforms on different browsers. Consolidated to
+   one block. */
+.hero__3d {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  /* GPU promotion: the canvas updates every frame, so we want
+     this layer to live on the compositor and not trigger
+     layout/paint of the whole sticky section. */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+
+/* ── Wrapper del Canvas de FONDO con motion blur CSS ──
+   El canvas de fondo (consultorio) usa un FILTRO SVG con
+   `feGaussianBlur stdDeviation="X 0"` (blur SOLO en X, cero en Y)
+   para producir MOTION BLUR DIRECCIONAL 1D en lugar de Gaussian
+   blur 2D. La silla gira sobre el eje Y → el contenido se
+   desplaza horizontalmente en pantalla → el streak del blur
+   debe ser horizontal para que parezca motion blur de verdad.
+
+   El filtro SVG lo inyecta DentalScene en el body al montar.
+   El syncer modula el stdDeviation cada frame:
+     - reposo: "0 0" (sin blur)
+     - giro rápido: "7 0" (streak horizontal de 7px)
+   El filtro decae de vuelta a 0 cuando la rotación se asienta.
+
+   Por auditoría del DOM, R3F 9 con createPortal monta el canvas
+   FUERA del wrapper padre (en el <body>), así que el filter
+   CSS en wrappers padres no funciona — debe aplicarse al
+   propio elemento canvas (gl.domElement). */
+.hero__3d-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+
+.hero__vignette {
+  top: 0;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 26, 36, 0) 35%,
+    rgba(14, 26, 36, 0.05) 75%,
+    rgba(14, 26, 36, 0.08) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── 4 SVG letters (CDPC) with independent parallax ── */
+/* Hidden by default (see .hero__letters { display: none } above) but
+   kept here so if/when the letters are reactivated (audit jun-2026
+   issue #4), the speed-curve transforms for each letter are
+   preserved. The element's parent has display:none so these are
+   inert until someone removes the .hero__letters display:none. */
+.hero__letter {
+  height: 60vh;
+  width: auto;
+  display: block;
+  will-change: transform;
+}
+
+/* Speeds (from the report: A=fastest, R=slowest) */
+.hero__letter--1 { transform: translate(calc(var(--hero-progress, 0) * -180px), 0); }
+.hero__letter--2 { transform: translate(calc(var(--hero-progress, 0) * -90px), 0); }
+.hero__letter--3 { transform: translate(calc(var(--hero-progress, 0) * 30px), 0); }
+.hero__letter--4 { transform: translate(calc(var(--hero-progress, 0) * 120px), 0); }
+
+/* ── Content (jun-2026 v3+) ── */
+/* Wrapper kept for the visible-state class hook (preloader handoff),
+   but contains no children of its own — the hero__wordmark is the
+   only piece of text and lives as a sibling absolute layer. */
+.hero__content {
+  top: 0;
+  height: 100%;
+  z-index: 3;
+  padding: calc(var(--header-h) + 40px) 40px 40px;
+}
+
+/* ── Wordmark — bottom-centred, distributed via letter-spacing ── */
+/* Single line ("PORTAL DE CASTILLA") anchored to the bottom of the
+   sticky wrapper, Jost 500. Font-size and letter-spacing calibrated
+   so the text spans the full viewport width with ~16px margin on
+   each side. Formula: (n*0.55 + (n-1)*k) * fs = viewport - 2*margin
+   where n=19 chars, k=lsRatio. With fs=2.6vw and ls=3.9vw (k=1.5)
+   the text fits in 1280px viewport at ratio 1.5 (1.5x char width).
+   white-space: nowrap forces the single line. Caps protect against
+   overflow on tiny viewports and against over-growth on huge ones. */
+.hero__wordmark {
+  bottom: 0;
+  z-index: 4;
+  margin: 0;
+  padding: 0 4px;
+  text-align: center;
+  white-space: nowrap;
+  font-family: 'Jost', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: clamp(20px, 5vw, 100px);
+  letter-spacing: clamp(2px, 2.4vw, 50px);
+  color: var(--c-ink);
+  text-transform: uppercase;
+  line-height: 1;
+  /* GPU promotion — will-change keeps the layer on the compositor */
+  will-change: transform;
+  transform: translateZ(0);
+}
+/* ── Caption / sub-caption — REMOVED in jun-2026 v3 ── */
+/* The hero caption and sub-caption blocks were deleted:
+   - .hero__caption: moved to the nav bar (--sticky-collapsed)
+   - .hero__subcaption + .hero__subcaption-line: redundant with
+     TrustBadges and WhyUs sections
+   Keeping their styles around would be dead code. */
+
+/* ── CTA overrides — REMOVED in jun-2026 v3 ── */
+/* The 3 CTAs (phone, contact form, WhatsApp) were removed from the
+   hero because:
+   1. The phone in the nav bar (header__cta) covers the primary
+      conversion path.
+   2. Centered buttons broke the AIRCENTER perimetral narrative.
+   3. Repeated contact options in the hero, header AND WhyUs
+      section was redundant.
+   The contact form, phone, and WhatsApp options are still
+   available at the end of the page (ContactForm section +
+   Footer) and via the phone CTA in the header. */
+
+/* ── Scroll indicator (pinned to bottom of sticky wrapper) ── */
+.hero__scroll-hint {
+  bottom: 40px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-grey);
+  opacity: 0;
+  animation: hero-scroll-hint 1.6s var(--ease-main) 1.4s forwards;
+}
+
+.hero__scroll-line {
+  display: block;
+  width: 1px;
+  height: 40px;
+  background: currentColor;
+  transform-origin: top;
+  animation: hero-scroll-line 2s var(--ease-main) 1.4s infinite;
+}
+
+@keyframes hero-scroll-hint { to { opacity: 1; } }
+@keyframes hero-scroll-line {
+  0%   { transform: scaleY(0); transform-origin: top; }
+  50%  { transform: scaleY(1); transform-origin: top; }
+  51%  { transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+/* ── Responsive ── */
+/* Mobile (<568px): smaller paddings, vignette off. The wordmark
+   needs explicit overrides — at 375px the desktop clamp
+   (fs: clamp(20px, 5vw, 100px), ls: clamp(2px, 2.4vw, 50px))
+   produces text too wide for the viewport:
+     - 19 chars * 0.55 (Jost 500 width) * 18.75px (5vw) = 196px just for glyphs
+     - + 18 spaces * 9px (2.4vw) = 162px for spacing
+     - = 358px just for the text, leaving 17px for padding → PORTA gets cut
+   Fix: reduce font-size to 4.2vw (≈16px at 375), keep letter-spacing
+   at 1.6vw (≈6px), and wrap to 2 lines if needed. The single-line
+   assumption breaks below 420px so we switch to 2 lines at <480px
+   to give "PORTAL DE CASTILLA" room to breathe on small phones
+   (iPhone SE 320px, Galaxy Fold 280px). */
+@media (max-width: 567px) {
+  .hero__vignette { display: none; }
+  .hero__content {
+    padding: calc(var(--header-h) + 24px) 24px 40px;
+  }
+  .hero__wordmark {
+    padding: 0 8px;
+    bottom: 16px;
+    /* Override the desktop clamp with mobile-tuned values. The
+       text now fits in 320-414px viewports without overflow. */
+    font-size: clamp(13px, 4.2vw, 22px);
+    letter-spacing: clamp(2px, 1.6vw, 8px);
+  }
+  .hero__scroll-hint { right: 20px; bottom: 20px; }
+  .hero__letter { height: 40vh; }
+}
+
+/* Very small phones (<380px): the 1-line wordmark still risks
+   overflow on 320-360px viewports (iPhone SE 1st gen, Galaxy A
+   series). Allow the wordmark to wrap to 2 lines so PORTAL sits
+   on top and DE CASTILLA on the bottom — matches the AIRCENTER
+   pattern of stacking the brand on a tight mobile hero. */
+@media (max-width: 379px) {
+  .hero__wordmark {
+    white-space: normal;
+    line-height: 1.1;
+    /* Tighter line-height on wrap so the 2 lines read as one block */
+    letter-spacing: clamp(1px, 1vw, 4px);
+    bottom: 20px;
+  }
+}
+
+/* ── Accessibility ── */
+@media (prefers-reduced-motion: reduce) {
+  /* R3F's Canvas still renders, but the rotation animation in
+     DentalScene becomes a no-op because useFrame's k→0 leaves
+     the model at its initial rotation. We just freeze the
+     SVG parallax too. */
+  .hero__letter { transform: none !important; }
+}

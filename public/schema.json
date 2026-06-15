@@ -1,0 +1,47 @@
+{
+  "@context": "https://schema.org",
+  "@type": ["Dentist", "LocalBusiness", "MedicalBusiness"],
+  "name": "Clínica Dental Portal de Castilla",
+  "alternateName": "CDPC",
+  "url": "https://portaldecastilla.com",
+  "telephone": "+34 945 144 099",
+  "priceRange": "€€",
+  "image": "/img/og-image.jpg",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Calle Portal de Castilla, 82 bajo",
+    "addressLocality": "Vitoria-Gasteiz",
+    "addressRegion": "Álava",
+    "postalCode": "01007",
+    "addressCountry": "ES"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 42.8398504,
+    "longitude": -2.6912052
+  },
+  "openingHoursSpecification": [
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday"], "opens": "09:00", "closes": "20:00" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": "Friday", "opens": "09:00", "closes": "18:00" }
+  ],
+  "sameAs": [
+    "https://www.facebook.com/clinicaportaldecastilla",
+    "https://twitter.com/portaldcastilla"
+  ],
+  "medicalSpecialty": ["Dentistry", "Endodontics", "Oral Surgery", "Orthodontics", "Prosthodontics", "Cosmetic Dentistry"],
+  "founder": { "@type": "Person", "name": "Juan Martín Esparza" },
+  "foundingDate": "1990",
+  "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.7", "reviewCount": "14" },
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Servicios dentales",
+    "itemListElement": [
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Implantes dentales" }},
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Ortodoncia invisible" }},
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Estética dental" }},
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Odontología general" }},
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Endodoncia" }},
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Cirugía oral" }}
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build artifacts
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Vercel
+.vercel
+
+# Project-internal docs (moved from subfolder READMEs to /docs on jun-2026
+# before deploy — these are dev notes, not user-facing docs, and the repo's
+# public README.md is the single source of truth for onboarding)
+/docs/
+
+# Legacy / unused files (kept on disk in case the team needs them later,
+# but excluded from the deploy repo to keep the bundle clean)
+src/App.css
+src/assets/
+public/icons.svg
+
+# Heavy unused media (~18MB of pre-production video clips that
+# were never integrated into the site; dental.glb is the only
+# 3D asset actually used at runtime)
+public/img/video/
+public/img/mapa-rosa-eliminada.*
+public/img/ubicacion-mapa.*

@@ -1,0 +1,2480 @@
+/* ─── TOKENS — AirCenter-inspired + corporate palette ─── */
+/* Corporate identity: #00B6EC (cyan) is the official Portal de Castilla
+   brand color (verified from logo PNG on 2026-06-13). White stays.
+   Black is NOT a brand color — sections previously using pure #000 now
+   use a tinted near-black that keeps the cyan legible. */
+:root {
+  /* Corporate cyan (extracted from logo at multiple sample points) */
+  --c-primary: #00B6EC;
+  /* main brand cyan */
+  --c-primary-rgb: 0, 182, 236;
+  --c-primary-dark: #0095C2;
+  /* hover/active state */
+  --c-primary-darker: #0077A0;
+  /* pressed state */
+  --c-primary-light: #4FCBEC;
+  /* tint on light backgrounds */
+  --c-primary-pale: #E5F7FD;
+  /* very subtle wash */
+  --c-primary-glass: rgba(0, 182, 236, 0.12);
+
+  /* Neutral axis (replaces pure black) */
+  --c-white: #FFFFFF;
+  --c-ink: #0E1A24;
+  /* near-black tinted with brand blue (was #000) */
+  --c-ink-2: #1B2A38;
+  /* section--dark surface (was #000) */
+  --c-grey: #6B7A87;
+  /* was #8D8D8D — desaturated toward ink */
+  --c-dark-grey: #4A5862;
+  /* was #606060 */
+  --c-superlight: #F2F4F6;
+  /* was #F2F2F2 */
+  --c-bg: #FAFBFC;
+  /* page background, subtle blue cast */
+
+  /* Legacy aliases — keep old var names working for any component
+     that still references --c-black. They map to the new ink tones,
+     NOT to pure #000 (which is not a brand color). */
+  --c-black: var(--c-ink);
+  --c-black-hover: var(--c-ink-2);
+
+  --font: 'Onest', "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --ease-main: cubic-bezier(0.25, 0.74, 0.22, 0.99);
+  --ease-slide: cubic-bezier(0.29, 0.73, 0.45, 1);
+  --ease-fast: cubic-bezier(0.7, 0, 0.3, 1);
+
+  --d-fast: 0.3s;
+  --d-base: 0.6s;
+  --d-slow: 1.2s;
+
+  --header-h: 70px;
+  --container: 1280px;
+}
+
+/* ─── THEME TOKENS — zero-JS theme switcher (HERO-DEEP-DIVE §8) ─── */
+/* Default = .ui-light: white bg, dark-ink text, cyan primary */
+.ui-light {
+  --t-background: var(--c-white);
+  --t-background-alt: rgba(14, 26, 36, 0.05);
+  --t-line: rgba(14, 26, 36, 0.12);
+  --t-small: rgba(14, 26, 36, 0.3);
+  --t-text: var(--c-dark-grey);
+  --t-heading: var(--c-ink);
+  --t-primary: var(--c-primary);
+  --t-primary-hover: var(--c-primary-dark);
+  --t-button-primary-text: var(--c-white);
+  --t-button-primary-background: var(--c-primary);
+  --t-button-primary-hover: var(--c-primary-dark);
+  --t-button-secondary-text: var(--c-ink);
+  --t-button-secondary-background: rgba(14, 26, 36, 0.06);
+  color: var(--t-text);
+}
+
+/* .ui-dark: ink bg, white text, cyan accents (inverted primary on CTAs) */
+.ui-dark {
+  --t-background: var(--c-ink-2);
+  --t-background-alt: rgba(0, 182, 236, 0.08);
+  --t-line: rgba(255, 255, 255, 0.12);
+  --t-small: rgba(255, 255, 255, 0.35);
+  --t-text: rgba(255, 255, 255, 0.7);
+  --t-heading: var(--c-white);
+  --t-primary: var(--c-primary);
+  --t-primary-hover: var(--c-primary-light);
+  --t-button-primary-text: var(--c-white);
+  --t-button-primary-background: var(--c-primary);
+  --t-button-primary-hover: var(--c-primary-dark);
+  --t-button-secondary-text: var(--c-white);
+  --t-button-secondary-background: rgba(255, 255, 255, 0.1);
+  color: var(--t-text);
+}
+
+/* ─── PRELOADER — Portal de Castilla brand plate split ── */
+/* The preloader is a full-screen ink-2 backdrop with a single
+   composite element: the brand plate (blue rounded outer frame +
+   two cream inner panels "PORTAL" | "CASTILLA" with a small "DE"
+   in the middle of the blue band). The plate is split exactly
+   at the horizontal center: a left half ("PORTAL" + "D") and a
+   right half ("E" + "CASTILLA"). On `phase==='fade-out'` the
+   two halves slide apart in opposite directions with a slight
+   rotateY to suggest 3D depth, and the backdrop fades out so
+   the hero reveals underneath.
+
+   No raster image, no AI marks — pure HTML+CSS, scales perfectly
+   on any viewport, and the split is pixel-exact (no off-by-one
+   seam). */
+:root {
+  /* Brand colors (matched to the logo plate) */
+  --plate-blue: #5BA8DC;
+  --plate-cream: #ECECEC;
+  --plate-bg: #F5F0E6;
+  /* page bg behind the plate (cream) */
+  --plate-de: #FFFFFF;
+  /* "D" / "E" letters in the blue band */
+}
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--plate-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Match the page bg so the fade-out is seamless (no white→cream
+     flash on transition). */
+  /* Depth context: enables rotateY on the halves during the
+     open animation. The 1500px gives a natural ~30° perspective
+     without exaggerating distortion. */
+  perspective: 1500px;
+  perspective-origin: 50% 50%;
+}
+
+/* ── Top progress bar ──
+   2px line at the top, fills left→right during the 1.5s loading
+   phase, then continues smoothly to 100% during the fade-out
+   so the bar always feels "alive" instead of jumping. */
+.preloader__progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--plate-blue);
+  transform: translateX(-100%);
+  will-change: transform;
+  animation: preloader-progress-fill 1.5s linear forwards;
+}
+
+@keyframes preloader-progress-fill {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.preloader--exiting .preloader__progress {
+  transition: transform 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+  transform: translateX(0);
+}
+
+/* ── The plate ──
+   The whole plate is a single blue rounded rectangle. Inside
+   it, two cream inner panels (PORTAL | CASTILLA) sit side by
+   side as "windows", with a thin blue strip between them
+   where the "D"/"E" letters live.
+
+   The plate is split at the exact horizontal center (50%/50)
+   into two halves that slide apart on fade-out. Each half is
+   itself a blue rounded rectangle (the outer corners of the
+   plate are split between the two halves: top-left + bottom-left
+   on the left half, top-right + bottom-right on the right half). */
+.preloader__plate {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: min(960px, 92vw);
+  height: 220px;
+  position: relative;
+  /* Subtle drop shadow under the plate */
+  filter: drop-shadow(0 12px 32px rgba(14, 26, 36, 0.10)) drop-shadow(0 4px 12px rgba(14, 26, 36, 0.06));
+  /* Initial entrance: scale up from 0.94 + fade in (1.5s, matches
+     the loading window). */
+  animation: preloader-plate-in 1.5s cubic-bezier(0.25, 0.74, 0.22, 0.99) forwards;
+}
+
+@keyframes preloader-plate-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Each half: a blue rounded rectangle with one cream panel
+   "window" cut out. The blue shows through around the panel
+   (top, bottom, and the outer side of the half), forming the
+   thin frame the brand plate needs. The seam side has no
+   padding so the two halves meet flush. */
+.preloader__half {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--plate-blue);
+  /* Subtle inner bevel to suggest a real frame */
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.18),
+    /* top inner highlight */
+    inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+  /* bottom inner shadow */
+  /* GPU promotion for the slide animation */
+  will-change: transform, opacity;
+  /* Pre-state (loading): halves are closed (no transform yet) */
+  transform: translate3d(0, 0, 0) rotateY(0);
+  transition: transform 1.4s cubic-bezier(0.86, 0, 0.07, 1),
+    opacity 1.4s cubic-bezier(0.86, 0, 0.07, 1);
+}
+
+/* Left half: outer rounded corners on the LEFT, square on the
+   right (the seam). 18px radius = brand-matching rounded ends. */
+.preloader__half--left {
+  border-radius: 18px 0 0 18px;
+}
+
+/* Right half: outer rounded corners on the RIGHT, square on the
+   left (the seam). */
+.preloader__half--right {
+  border-radius: 0 18px 18px 0;
+}
+
+/* ── Exit (phase === 'fade-out') ──
+   Left half slides off to the LEFT, with a slight rotateY so the
+   right edge pulls back in 3D. Right half mirrors. */
+.preloader--exiting .preloader__half--left {
+  transform: translate3d(-100%, 0, 0) rotateY(28deg);
+  transform-origin: 100% 50%;
+  opacity: 0;
+}
+
+.preloader--exiting .preloader__half--right {
+  transform: translate3d(100%, 0, 0) rotateY(-28deg);
+  transform-origin: 0% 50%;
+  opacity: 0;
+}
+
+/* The whole plate also fades out slightly so the seam doesn't
+   leave a hard vertical line at the center. */
+.preloader--exiting .preloader__plate {
+  transition: opacity 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+  opacity: 0;
+}
+
+/* ── Inner cream panels (PORTAL | CASTILLA) ──
+   "Windows" inside the blue half. Use margin to leave a thin
+   blue frame around them (top, bottom, outer side, AND the
+   seam side). The seam-side margin creates a wider blue strip
+   down the middle of the plate where the D/E letters sit. */
+.preloader__panel {
+  width: calc(100% - 50px);
+  /* leave 25px on each outer side */
+  height: calc(100% - 36px);
+  /* leave 18px top + 18px bottom */
+  background: var(--plate-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Subtle inner bevel on the panel */
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Left half panel: 25px margin on the LEFT (outer) side to
+   create the thin blue outer frame. 40px margin on the RIGHT
+   (seam) side to create a thicker blue strip down the middle
+   (where the "D" letter sits, with room to bring it close to
+   the seam). */
+.preloader__half--left .preloader__panel {
+  margin: 18px 40px 18px 25px;
+  border-radius: 4px 0 0 4px;
+}
+
+/* Right half panel: 25px margin on the RIGHT (outer) side.
+   40px margin on the LEFT (seam) side to mirror the blue
+   middle strip. */
+.preloader__half--right .preloader__panel {
+  margin: 18px 25px 18px 40px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* The actual word text. Uppercase, sans-serif, weight matches
+   the brand plate. */
+.preloader__word {
+  font-size: clamp(1.1rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--plate-blue);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* ── "D" and "E" letters in the blue strip between the panels ──
+   The "D" lives inside the left half (sits ON the right edge =
+   the seam), the "E" mirrors on the right half. When the halves
+   are closed, the D and E sit close together forming "DE" in
+   the center — exactly like the logo. Both letters are
+   absolutely positioned on the blue middle strip, painted in
+   the same cream color as the page background so they read as
+   "carved out" of the blue frame. */
+.preloader__de {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--plate-bg);
+  /* cream — same as page background */
+  font-size: clamp(0.95rem, 2vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  user-select: none;
+  z-index: 3;
+  background: transparent;
+}
+
+/* "D" lives in the left half, at the right edge of the
+   PORTAL panel (which is the seam). Sits 2px from the right
+   edge of the half (almost at the seam) so the gap between
+   D and E is just ~4px. */
+.preloader__de--left {
+  right: 2px;
+}
+
+/* "E" mirrors: 2px from the left edge of the half. Together
+   with .preloader__de--left this puts D and E close together
+   forming "DE" with a small visual gap (~4px) between them,
+   centered in the 80px blue middle strip. */
+.preloader__de--right {
+  left: 2px;
+}
+
+/* ── Backdrop fade-out ── */
+.preloader--exiting {
+  /* Note: opacity is animated on the plate (above) and the
+     halves; the backdrop stays at full opacity until the halves
+     have fully slid away (~1.0s into the 1.2s transition), then
+     fades so the hero is revealed smoothly underneath. */
+  background: var(--plate-bg);
+  transition: background-color 0.4s ease 0.9s;
+  background-color: transparent;
+}
+
+/* ── Mobile ── */
+@media (max-width: 567px) {
+  .preloader__plate {
+    height: 140px;
+  }
+
+  .preloader__word {
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+  }
+
+  .preloader__de {
+    font-size: 0.9rem;
+  }
+
+  .preloader__half {
+    border-radius: 12px 0 0 12px;
+  }
+
+  .preloader__half--right {
+    border-radius: 0 12px 12px 0;
+  }
+}
+
+/* ── a11y: skip animations for reduced-motion users ── */
+@media (prefers-reduced-motion: reduce) {
+
+  .preloader__plate,
+  .preloader__half {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ─── RESET ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--c-bg);
+  color: var(--c-black);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+video {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font: inherit;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* ─── SCROLLBAR ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--c-superlight);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--c-grey);
+  border-radius: 3px;
+}
+
+/* ─── LAYOUT UTILITIES ─────────────────────────────────── */
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.section {
+  width: 100%;
+  position: relative;
+}
+
+.section--dark {
+  background: var(--c-black);
+  color: var(--c-white);
+}
+
+.section--dark .body-text {
+  color: var(--c-grey);
+}
+
+.section--dark .heading {
+  color: var(--c-white);
+}
+
+/* ─── TYPOGRAPHY ───────────────────────────────────────── */
+.heading-xl {
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: var(--c-black);
+}
+
+.heading-lg {
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.heading-md {
+  font-size: clamp(18px, 2vw, 28px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.caption {
+  font-size: clamp(13px, 1.2vw, 16px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--c-grey);
+  text-transform: uppercase;
+}
+
+.body-text {
+  font-size: clamp(16px, 1.5vw, 21px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--c-dark-grey);
+}
+
+.small-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-grey);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─── BUTTONS — AirCenter :after/:before pattern (HERO-DEEP-DIVE §7) ──── */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  text-decoration: none;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color var(--d-base) var(--ease-main);
+}
+
+.btn::before,
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  transition: transform var(--d-base) var(--ease-main),
+    background var(--d-base) var(--ease-main);
+  will-change: transform, background;
+}
+
+.btn::after {
+  background: var(--c-primary);
+  transform: translateY(0);
+}
+
+.btn::before {
+  background: var(--c-primary-dark);
+  transform: translateY(100%);
+}
+
+.btn:hover {
+  color: var(--c-white);
+}
+
+.btn:hover::after {
+  transform: translateY(-100%);
+}
+
+.btn:hover::before {
+  transform: translateY(0);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Variants: control initial color + after-color via specificity ── */
+.btn-primary {
+  color: var(--c-white);
+}
+
+.btn-primary::after {
+  background: var(--c-primary);
+}
+
+.btn-primary::before {
+  background: var(--c-primary-dark);
+}
+
+.btn-ghost-white {
+  color: var(--c-white);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.btn-ghost-white::after {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-ghost-white::before {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.btn-ghost-white:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-outline {
+  color: var(--c-ink);
+  border: 1px solid rgba(14, 26, 36, 0.2);
+}
+
+.btn-outline::after {
+  background: transparent;
+}
+
+.btn-outline::before {
+  background: rgba(14, 26, 36, 0.05);
+}
+
+.btn-outline:hover {
+  color: var(--c-ink);
+  border-color: var(--c-primary);
+}
+
+.btn-outline-white {
+  color: var(--c-white);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn-outline-white::after {
+  background: transparent;
+}
+
+.btn-outline-white::before {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-outline-white:hover {
+  color: var(--c-white);
+  border-color: var(--c-primary);
+}
+
+.btn-lg {
+  padding: 18px 36px;
+  font-size: 11px;
+}
+
+/* ── Rotating arrow icon (HERO-DEEP-DIVE §7 — btn--rotation) ──── */
+.btn-rotation .btn-arrow {
+  display: inline-block;
+  transition: transform var(--d-base) var(--ease-main);
+  will-change: transform;
+}
+
+.btn-rotation:hover .btn-arrow {
+  transform: rotate(90deg);
+}
+
+/* Focus visible — accessibility ring (HERO-DEEP-DIVE §7) */
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--c-grey);
+}
+
+/* ─── ANIMATE ON SCROLL ────────────────────────────────── */
+.aos {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity var(--d-slow) var(--ease-main),
+    transform var(--d-base) var(--ease-slide);
+}
+
+.aos.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.aos-delay-1 {
+  transition-delay: 100ms;
+}
+
+.aos-delay-2 {
+  transition-delay: 200ms;
+}
+
+.aos-delay-3 {
+  transition-delay: 300ms;
+}
+
+.aos-delay-4 {
+  transition-delay: 400ms;
+}
+
+.aos-delay-5 {
+  transition-delay: 500ms;
+}
+
+/* ==========================================================================
+   COMPONENT: MINIMALIST HEADER & OVERLAY (CLEAN SPECIFICITY)
+   ========================================================================== */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.8rem 4vw;
+  z-index: 100;
+  pointer-events: none;
+  background: transparent;
+  transition: background 400ms cubic-bezier(0.25, 0.74, 0.22, 0.99),
+              backdrop-filter 400ms cubic-bezier(0.25, 0.74, 0.22, 0.99),
+              -webkit-backdrop-filter 400ms cubic-bezier(0.25, 0.74, 0.22, 0.99);
+}
+
+/* Once the user scrolls past the hero, the header gets a frosted-glass
+   background so the wordmark (anchored to the left of the navbar) and
+   the phone CTA don't read as floating ghosts over the scrolling
+   content. The blur is light (12px) — the goal is a "soft separation"
+   between the nav and the content, not a hard bar. Background is
+   78% white so on light sections the nav sits clearly above the
+   content, and on dark sections (Team, Footer) the blur+alpha still
+   reads as a coherent glass bar.
+
+   Bug #M2 fix (jun-2026 mobile audit): before this, the header had
+   no background at any state, so on mobile the wordmark "PORTAL DE
+   CASTILLA" was visible at x≈0 (anchored to the left) floating on
+   top of the services/team/testimonials images as the user scrolled
+   — terrible legibility, looked like a text rendering bug. The frosted
+   background gives the wordmark a clean substrate to sit on. */
+.header--sticky,
+.header--sticky-collapsed {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+}
+
+/* Keep the top state fully transparent so the header floats over the
+   hero without a hard bar — the AIRCENTER pattern (header is a quiet
+   layer on the hero, only becomes a "bar" once the user scrolls). */
+.header--top {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.header__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+}
+
+/* BOTÓN DE HAMBURGUESA MINIMALISTA (2 líneas con grosor) */
+.header__burger-minimal {
+  pointer-events: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  /* Separación proporcional entre ambas líneas */
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  z-index: 101;
+}
+
+.header__burger-minimal span {
+  display: block;
+  width: 100%;
+  height: 2.5px;
+  /* Grosor óptimo solicitado: equilibrado y fino */
+  background-color: var(--c-ink);
+  border-radius: 2px;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Animación precisa a 'X' para un sistema de 2 barras */
+.header__burger-minimal.is-open span:nth-child(1) {
+  transform: translateY(4.25px) rotate(45deg);
+}
+
+.header__burger-minimal.is-open span:nth-child(2) {
+  transform: translateY(-4.25px) rotate(-45deg);
+}
+
+
+/* BOTÓN DE TELÉFONO UNIFORME (Cuadrado con esquinas suavizadas) */
+.header__cta-phone {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.3rem;
+  background: var(--c-white);
+  border: 1px solid rgba(14, 26, 36, 0.12);
+  border-radius: 8px;
+  /* Cambiado de 100px a 8px para unificar con el lenguaje visual de la web */
+  color: var(--c-ink);
+  text-decoration: none;
+  font-family: 'Jost', sans-serif;
+  font-weight: 500;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.01);
+}
+
+.header__cta-phone:hover {
+  background: var(--c-primary-pale);
+  border-color: var(--c-primary);
+  color: var(--c-primary-dark);
+}
+
+.header__cta-phone-icon {
+  color: var(--c-primary);
+  transition: transform 0.3s ease;
+}
+
+.header__cta-phone:hover .header__cta-phone-icon {
+  transform: scale(1.08);
+}
+
+
+/* OVERLAY DE MENÚ FLOTANTE */
+.menu-overlay-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: #f4f6f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.menu-overlay-fullscreen.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.menu-overlay__box {
+  width: 100%;
+  max-width: 960px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 4.5rem;
+  box-shadow: 0 40px 90px rgba(14, 26, 36, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  transform: scale(0.97);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.menu-overlay-fullscreen.is-open .menu-overlay__box {
+  transform: scale(1);
+}
+
+.menu-overlay__grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 5rem;
+  align-items: center;
+}
+
+.menu-overlay__left-col {
+  border-right: 1px solid rgba(14, 26, 36, 0.08);
+  padding-right: 5rem;
+}
+
+.menu-overlay__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.menu-overlay__nav-link {
+  font-family: 'Jost', sans-serif;
+  font-size: 2.3rem;
+  font-weight: 500;
+  color: var(--c-ink);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  letter-spacing: -0.01em;
+  display: inline-block;
+}
+
+.menu-overlay__nav-link:hover {
+  color: var(--c-primary);
+  transform: translateX(8px);
+}
+
+.menu-overlay__right-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.menu-contact-card__title {
+  font-family: 'Jost', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--c-ink);
+  margin-bottom: 1.2rem;
+  opacity: 0.4;
+}
+
+.menu-contact-card__link,
+.menu-contact-card__text {
+  font-family: 'Jost', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: var(--c-ink);
+  text-decoration: none;
+  line-height: 1.6;
+  transition: color 0.3s ease;
+}
+
+.menu-contact-card__link:hover {
+  color: var(--c-primary);
+}
+
+.menu-overlay__footer {
+  border-top: 1px solid rgba(14, 26, 36, 0.06);
+  padding-top: 1.8rem;
+  text-align: center;
+}
+
+.menu-overlay__location {
+  font-family: 'Jost', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.5em;
+  color: var(--c-grey);
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .menu-overlay__box {
+    padding: 3rem 1.8rem;
+    gap: 2.5rem;
+  }
+
+  .menu-overlay__grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .menu-overlay__left-col {
+    border-right: none;
+    border-bottom: 1px solid rgba(14, 26, 36, 0.08);
+    padding-right: 0;
+    padding-bottom: 2.5rem;
+  }
+
+  .menu-overlay__nav-link {
+    font-size: 1.8rem;
+  }
+}
+
+/* ==========================================================================
+   SCROLL-DRIVEN INTERPOLATION: PORTAL DE CASTILLA WORDMARK
+   ==========================================================================
+   El wordmark ("PORTAL DE CASTILLA") es el mismo elemento lógico durante
+   TODO el scroll. Cinco propiedades se interpolan entre dos estados
+   usando CSS calc() sobre --hero-progress (escrita por Hero.jsx en
+   documentElement), y todas ellas comparten --progEff = min(1, prog*2)
+   para que la transición ocurra solo en la PRIMERA MITAD del scroll.
+
+   Estado 1 (--prog=0): wordmark BLANCO al centro/centro del viewport,
+     grande (7.2vw), font-weight 700 (Bold) para dar presencia y peso
+     visual sobre la escena 3D.
+   Estado 2 (--prog=1): wordmark en --c-ink anclado a la izquierda
+     junto al burger, font-size 16px, font-weight 500 (Medium — el
+     peso actual que el wordmark siempre ha tenido en el navbar).
+
+   La "sorpresa" es el contraste de PRESENCIA + COLOR:
+   (1) FONT-WEIGHT: 700 → 500. El blanco del estado 1 se "presenta"
+       con peso Bold (700) para que tenga masa visual sobre el
+       consultorio claro y la silla 3D. Al llegar al navbar, el peso
+       se "afloja" a Medium (500), el peso histórico del wordmark.
+       El usuario percibe la transición de Bold a Medium como
+       "asentamiento" o "calma" al llegar al navbar.
+   (2) COLOR: interpolación RGB canal por canal de #FFFFFF a #0E1A24
+       (--c-ink). Pasa por una fase gris-azul al ~50% del recorrido
+       que da la sensación de "tinta secándose" sobre la escena 3D.
+   (3) SIZE: 7.2vw → 16px. La palabra se "condensa" en su forma
+       final al llegar al navbar.
+
+   /* Texto siempre COMPLETO (sin clip-path, sin blur, sin halo) —
+    el cambio de peso y color hacen todo el trabajo visual.
+
+    TRANSICIÓN CSS: durante scroll activo, el rAF del Hero escribe
+    --hero-progress cada 16ms y la interpolación sigue linear. Pero
+    al DETENERSE el scroll, el último cambio se suaviza con un
+    easing exponencial (cubic-bezier 0.25, 0.74, 0.22, 0.99 — el
+    principal del proyecto, settle en ~0.45s) — la sensación de
+    "aterrizaje" en cada extremo se vuelve orgánica en vez de un
+    stop mecánico. Duración 0.4s (un pelín más corta que el lerp
+    JS, para que la transición termine justo cuando el lerp ya
+    asentó).
+
+    pointer-events: none para no bloquear el burger/CTA del header
+    durante la transición. z-index 102 para estar por encima del
+    burger (101) y del overlay del menú (95). */
+
+    .header__wordmark {
+  position: fixed;
+  /* Posición final: anclada a la izquierda del navbar, al lado del burger. */
+  left: calc(4vw + 44px + 12px);
+  top: 2.15rem;
+
+  margin: 0;
+  font-family: 'Jost', sans-serif;
+  z-index: 102;
+  pointer-events: none;
+  transform-origin: left center;
+  white-space: nowrap;
+
+  --prog: var(--hero-progress, 0);
+
+  /* Interpolación concentrada en la primera mitad del scroll (prog 0..0.5).
+     progEff = prog*2 (saturando a 1 cuando prog>=0.5). */
+  --progEff: min(1, var(--prog) * 2);
+  --inv: calc(1 - var(--progEff));
+
+  font-size: calc( (var(--inv) * 7.2vw) + (var(--progEff) * 16px) );
+  letter-spacing: calc( (var(--inv) * 0.15em) + (var(--progEff) * 0.08em) );
+
+  /* COLOR: blanco (estado 1) → --c-ink = #0E1A24 (estado 2). Interpolación
+     RGB por canal. La transición lineal entre blanco e ink pasa por una
+     fase gris-azul (al ~50% del recorrido) que da la sensación de
+     "tinta secándose" sobre la escena 3D. */
+  color: rgb(
+    calc(255 - (255 - 14) * var(--progEff)),
+    calc(255 - (255 - 26) * var(--progEff)),
+    calc(255 - (255 - 36) * var(--progEff))
+  );
+
+  /* FONT-WEIGHT: 700 (estado 1, "Bold" — da presencia al blanco grande
+     sobre la escena 3D) → 500 (estado 2, "Medium" — el peso actual
+     que ya está en uso en el navbar). Interpolación por pasos (step
+     200) para que el browser solo cargue las variantes declaradas
+     en Google Fonts (500 y 700). */
+  font-weight: calc(700 - (700 - 500) * var(--progEff));
+
+  /* Posición: estado 1 = CENTRO/centro. estado 2 = navbar. */
+  transform: translate(
+    calc( var(--inv) * ( 50vw - (4vw + 44px + 12px) - 50% ) ),
+    calc( var(--inv) * ( 50vh - 2.15rem - 50% ) )
+  );
+}
+
+/* Mobile (jun-2026 audit): the desktop state-2 wordmark
+   (font-size 16px + 0.08em letter-spacing, "PORTAL DE CASTILLA")
+   is 19 chars * 8.6px = 163px + 18*1.4px spacing = 188px wide.
+   Pinned at `left: calc(4vw + 44px + 12px)` (= 71px on 375px
+   viewport), the right edge lands at 71 + 188 = 259px — well
+   inside the 375px viewport BUT it collides with the burger
+   icon (which is at x≈12, 28px wide) and the wordmark's anchor
+   origin is at its own left edge so visually it sits in the
+   gap between burger and CTA. The mobile screenshots showed
+   the wordmark pushed further left (x=-115 per the audit
+   measurements) because the "stuck-in-the-middle" interp math
+   of `calc(50vw - (4vw+44px+12px) - 50%)` produced a negative
+   offset on viewports < ~640px.
+
+   Fix: below 768px, override the final-state positioning to
+   tuck the wordmark right next to the burger (10px gap) and
+   keep the font tight (13px, 0.05em). Below 480px, the wordmark
+   is so small it almost disappears — at that point it's better
+   to hide it (the burger + the hero wordmark already provide
+   branding). The wordmark stays in state 1 (big white centered)
+   on the hero, so the brand is always present in some form. */
+@media (max-width: 767px) {
+  .header__wordmark {
+    left: 56px; /* burger ends at ~52px (12+28+12 padding) */
+    top: 1.65rem;
+    /* On mobile, the wordmark is ALWAYS in the navbar slot —
+       no interpolation, no state 1 (centered big white mark).
+       Reason: at <768px the desktop interpolation produces a
+       half-state (mid-color, mid-size, mid-translate) for the
+       first half of the scroll which reads as a "ghost" of the
+       wordmark floating over the content. The brand identity is
+       carried by:
+         - the hero wordmark (the .hero__wordmark layer in
+           Hero.css, reserved for v4+) which is the big centered
+           brand mark visible on the hero
+         - the navbar wordmark (this rule) which is the persistent
+           brand tag in the nav from page-load
+       So in mobile we collapse the interpolation to the navbar
+       endpoint from the start. The preloader handoff still gives
+       the wordmark its entrance rise+blur feel (Header.jsx line
+       30-44), but after that the wordmark stays put.
+
+       The hero wordmark will be reactivated in a future v4 —
+       for now the hero shows the 3D scene (dental chair) as
+       the dominant visual. The navbar wordmark provides
+       persistent branding across all sections. */
+    transform: none !important;
+    font-size: 12px !important;
+    letter-spacing: 0.04em !important;
+    color: var(--c-ink) !important;
+    font-weight: 500 !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Tablet portrait (768-1024px) — the desktop wordmark math
+   `left: calc(4vw + 44px + 12px)` (= ~76px at 768) plus the
+   16px state-2 wordmark still produces a navbar tag that fits,
+   but the state-1 transform interpolation
+   `translate(50vw - 76px - 50%, ...)` evaluates to a NEGATIVE
+   translate on viewports < ~960px because the wordmark's own
+   width eats the gap. Without an override the wordmark drifts
+   left during the first half of the scroll and pushes the
+   page body to scroll horizontally (the offending IMG
+   measurements in the audit at 768px were the symptom).
+
+   Apply the same collapse as mobile: anchor to left:84px
+   (burger + a bit more gap on tablet), keep the navbar-end
+   font-size, and reset the transform. State 1 (centered big
+   white) is preserved on desktop ≥1024px where there's room. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .header__wordmark {
+    left: 84px;
+    transform: none !important;
+    font-size: 14px !important;
+    letter-spacing: 0.05em !important;
+  }
+}
+
+@media (max-width: 479px) {
+  /* Very small viewports: the wordmark is too small to read AND
+     competes with the burger for the 56px slot. Hide it entirely
+     in state 2 — the user still has the burger for navigation and
+     the hero wordmark for branding. Saves 60-80px of horizontal
+     real estate that the phone CTA needs. */
+  .header__wordmark--visible { opacity: 0; }
+}
+
+/* ─── WORDMARK ENTER TRANSITION (post-preloader handoff) ────── */
+/* Triggered by the .header__wordmark--visible class that Header.jsx
+   adds after preloader:done. The wordmark starts hidden (opacity 0,
+   translateY 60px, blur 12px) and rises into state 1 with a 120ms
+   stagger between PORTAL / DE / CASTILLA — the AIRCENTER pattern
+   from the v4 deep-dive (motion rise + blur stagger, GPU-accelerated,
+   NO clip-path, NO split-char).
+
+   Why the chunk split: the wordmark is one h2, but visual chunks
+   separated by wider letter-spacing read as "PORTAL | DE | CASTILLA"
+   anyway (the inner panels of the preloader logo). Splitting into 3
+   spans lets us stagger the entrance exactly like the preloader
+   panels split apart, so the handoff reads as one continuous motion
+   rather than the wordmark popping in cold.
+
+   Timing: container 700ms ease-out (the "settle"), then each chunk
+   runs the same transform/opacity/filter transition with a 0 / 120 /
+   240ms delay. Total perceived duration: ~940ms. Compatible with the
+   preloader fade-out (1.2s, dispatches preloader:done at 800ms in) so
+   the wordmark finishes rising just as the preloader finishes sliding
+   apart.
+
+   Note: the chunks are display:inline-block + white-space:nowrap is
+   on the parent, so the text stays on one line and each chunk can
+   have its own transition without breaking the line layout.
+   pointer-events:none is inherited from the parent. */
+.header__wordmark {
+  /* Enter transition: 700ms ease-out on opacity + filter. transform
+     is NOT included here because the parent's transform is
+     continuously rewritten by the scroll-driven --prog custom
+     property (rAF in Hero.jsx) — a CSS transition on transform
+     would double-up with the JS lerp and create the "flat landing"
+     the user reported previously. The transform used by the enter
+     animation lives on the CHUNKS (a different element), so this
+     rule only needs to cover the container's own opacity/filter. */
+  transition: opacity 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              filter   700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.header__wordmark--hidden {
+  opacity: 0;
+  /* Sit behind the preloader (z-index 9999) so the user never sees a
+     ghost of the wordmark peeking through the loading screen. We
+     also use translateY(0) on the container so the chunks' own
+     translateY adds on top of it — keeps the stagger math simple. */
+  z-index: 1;
+  filter: blur(12px);
+  /* No transform on the container itself — the chunks do the rise. */
+}
+
+.header__wordmark--visible {
+  opacity: 1;
+  filter: blur(0);
+  /* z-index 102 wins over the preloader (which is unmounted by now,
+     but we keep this for safety in case the unmount is delayed). */
+  z-index: 102;
+}
+
+.header__wordmark__chunk {
+  display: inline-block;
+  white-space: pre;
+  /* Override the parent's letter-spacing calc so the staggered
+     animation doesn't fight with the scroll-driven letter-spacing.
+     The chunk inherits the parent's font properties (color, weight,
+     size) so it visually reads as one continuous word.
+
+     Why padding-right: when the wordmark was a single text node,
+     letter-spacing added N*0.15em of trailing space between every
+     character (and between words). Splitting into 3 inline-block
+     spans, letter-spacing no longer bridges the gap between spans.
+     We replicate the visible spacing with padding-right on chunks
+     1 and 2 so the 3 chunks read as a single word with the same
+     rhythm. The padding scales with the parent's letter-spacing by
+     piggy-backing on the --prog custom property the parent already
+     computes. */
+  /* 0.3em ≈ 0.3 × 92px = ~28px gap between PORTAL↔DE and DE↔CASTILLA
+     at the default state-1 size (7.2vw). The letter-spacing inside
+     each chunk (0.15em) adds trailing space after each letter, so the
+     visual gap is letter-spacing + padding-right. */
+  padding-right: calc((var(--prog) * 0.08em) + 0.3em);
+  will-change: transform, opacity, filter;
+  transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              opacity   700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              filter    700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+/* No trailing padding on the last chunk so the wordmark doesn't get
+   a phantom gap to the right of CASTILLA. */
+.header__wordmark__chunk--3 { padding-right: 0; }
+
+/* Stagger: 0 / 120 / 240ms. Per the v4 pattern, the BLUR clears
+   before the rise finishes so the text "snaps into focus" while
+   still moving up — same easing as the parent for coherence. */
+.header__wordmark--hidden .header__wordmark__chunk {
+  opacity: 0;
+  transform: translateY(60px);
+  filter: blur(12px);
+}
+.header__wordmark--visible .header__wordmark__chunk {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+.header__wordmark__chunk--1 { transition-delay: 0ms,   0ms,   0ms; }
+.header__wordmark__chunk--2 { transition-delay: 120ms, 120ms, 120ms; }
+.header__wordmark__chunk--3 { transition-delay: 240ms, 240ms, 240ms; }
+
+/* Reduced motion: respect the a11y setting. The preloader hook
+   already skips its own animation and the wordmark enter should
+   snap to visible with no motion. */
+@media (prefers-reduced-motion: reduce) {
+  .header__wordmark,
+  .header__wordmark__chunk {
+    transition: none !important;
+  }
+  .header__wordmark--hidden,
+  .header__wordmark--hidden .header__wordmark__chunk {
+    opacity: 0;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* ─── WORDMARK HIDDEN BY MENU (scroll-0 + menu open) ─── */
+/* When the burger is tapped at scroll 0, the wordmark sits in the
+   hero center. The menu overlay slides in below it (z-index 95) and
+   the wordmark (z-index 102) ends up floating ON TOP of the menu —
+   visually wrong because it's not a menu element, it's the hero
+   anchor. The fix: hide the wordmark in this exact condition
+   (menu open AND scroll state is still 'top'). If the user has
+   already scrolled, the wordmark has collapsed into the navbar slot
+   and is the visual anchor of the menu itself — leave it visible.
+
+   Faster transition than the enter animation (300ms vs 700ms) so the
+   hide/show feels like a UI affordance, not a separate motion. The
+   transition only kicks in when this class is added/removed; the
+   regular enter transition (which is on the .header__wordmark base
+   rule) still governs the chunks' rise+blur. We override transition
+   on the base for the duration of the menu-open state by
+   redeclaring it with a shorter duration — this is intentional
+   because the menu-open toggle happens mid-flight and the user
+   needs a snappy response. */
+.header__wordmark--hidden-by-menu {
+  opacity: 0 !important;
+  filter: blur(8px);
+  pointer-events: none;
+  /* Use a faster transition than the enter animation. We list this
+     AFTER the base .header__wordmark rule so it wins by source
+     order. The 300ms fade is fast enough to feel instant when the
+     burger is tapped but slow enough to not "pop" the wordmark. */
+  transition: opacity 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              filter  300ms cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+}
+.header__wordmark--hidden-by-menu .header__wordmark__chunk {
+  /* Don't let the chunk rise during the menu hide — the wordmark
+     is fading out, the chunks should stay in their final settled
+     position so the fade looks clean. */
+  transform: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+@media (max-width: 768px) {
+  .header__wordmark {
+    top: 2.05rem;
+
+    font-size: calc( (var(--inv) * 8vw) + (var(--prog) * 13px) );
+    letter-spacing: calc( (var(--inv) * 0.12em) + (var(--prog) * 0.05em) );
+
+    transform: translate(-50%, 0)
+      translate(
+        calc( var(--inv) * 0px ),
+        calc( var(--inv) * (78vh - 2.05rem) )
+      );
+  }
+}
+
+/* ─── HERO ─────────────────────────────────────────────── */
+/* NOTE: .hero, .hero__bg, .hero__content, .hero__letters, etc. are defined
+   in src/components/Hero.css (the AirCenter 3-layer pattern with sticky
+   wrapper). Do NOT redefine them here — duplicates with the broken
+   flex+align-items pattern will override the correct Hero.css rules
+   (caused the hero to render in the middle of its 200svh wrapper). */
+
+/* ─── TRUST BADGES ──────────────────────────────────────── */
+.trust-badges {
+  padding: 32px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Cuando TrustBadges está dentro de .whyus (jun-2026 v5), actúa como
+   header visual de la sección. Anulamos el border-bottom (porque va
+   seguido del heading de WhyUs, no de otra sección) y aumentamos el
+   padding-bottom para que haya aire entre los badges y el heading. */
+.whyus > .container > .trust-badges {
+  padding: 24px 0 64px;
+  border-bottom: none;
+}
+
+.trust-badges__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-dark-grey);
+}
+
+.trust-badge__number {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: var(--c-black);
+}
+
+/* ─── WHY US ───────────────────────────────────────────── */
+.whyus {
+  padding: 120px 0;
+  /* Scrollover 3-etapas (jun-2026 v5): con el track del hero en 300svh
+     y el sticky 100svh, la cortina se monta así:
+       - 0→100vh scroll: hero anima (silla rota, textos interpolan)
+       - 100vh→200vh: hero CONGELADO (prog=1, clamp), whyus esperando
+                       100svh por debajo del viewport
+       - 200vh→300vh: hero sigue congelado, whyus sube cubriéndolo
+                       (margin-top: -100svh la posiciona 100vh más
+                       arriba de su lugar CSS, así que al llegar el
+                       scroll a 200vh el top de whyus toca el bottom
+                       del viewport y comienza el barrido)
+     - position: relative: sale del flujo normal pero mantiene su lugar
+     - z-index: 2: por encima del .hero (z-index 1)
+     - background: var(--c-white): bloque opaco para tapar al canvas
+     - margin-top: -100svh: sube 100svh para que arranque donde
+       TERMINA el contenido visible del hero (el sticky a 100svh)
+     - scroll-margin-top: 100svh: el anchor #nosotros aterriza con el
+       top de whyus 100svh por debajo del viewport — así el sticky
+       del hero queda visible ARRIBA del heading de whyus durante
+       un instante antes de la cortina, dando contexto al usuario de
+       que está pasando del hero a la siguiente sección. */
+  position: relative;
+  z-index: 2;
+  background: var(--c-white);
+  margin-top: -100svh;
+  scroll-margin-top: 100svh;
+}
+
+.whyus__header {
+  margin-bottom: 80px;
+}
+
+.whyus__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.whyus__card {
+  background: var(--c-bg);
+  padding: 56px 48px;
+  transition: background var(--d-fast);
+}
+
+/* Mobile (jun-2026 audit): 56×48px padding on a 327px card eats
+   ~30% of the visible area. The desktop padding is tuned for the
+   2-col grid (each card ~480px wide on 1280px viewport, so 48px
+   feels balanced) — on mobile the card is 327px and the same 48px
+   feels suffocating. Reduce to 32×24px. */
+@media (max-width: 767px) {
+  .whyus__card {
+    padding: 32px 24px;
+  }
+  .whyus__card-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 20px;
+  }
+  .whyus__card-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.whyus__card:hover {
+  background: var(--c-white);
+}
+
+.whyus__card-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 28px;
+  color: var(--c-black);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+/* SVG inside the icon slot — force explicit size + thicker stroke (1.5 was
+   barely visible at 48px, made icons look broken) */
+.whyus__card-icon svg {
+  width: 48px;
+  height: 48px;
+  stroke-width: 2;
+  display: block;
+}
+
+.whyus__card-heading {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  color: var(--c-black);
+}
+
+.whyus__card-body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--c-dark-grey);
+}
+
+/* ─── SERVICES ──────────────────────────────────────────── */
+.services {
+  padding: 120px 0;
+  background: var(--c-ink-2);
+}
+
+.services__header {
+  margin-bottom: 80px;
+}
+
+.services__header .caption {
+  color: var(--c-grey);
+}
+
+.services__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.service-card {
+  background: var(--c-ink-2);
+  padding: 48px 40px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Mobile (jun-2026 audit): the desktop card is 397×627px on mobile
+   because the 1-column grid inherits the desktop image aspect
+   (4/3) AND the negative margin (-48px -40px) which was designed
+   for the 3-col desktop layout where the card has 40px gutters
+   and the image bleeds into them. On mobile the 1-column card
+   is 100% wide, so the negative margin (-40px) pushes the image
+   PAST the viewport, creating horizontal scroll on the card
+   (the .services section has overflow visible, so the bleed goes
+   to the body → scrollX > scrollW bug, although here the audit
+   showed no global overflow because the body clips it).
+
+   Fix: at <768px, drop the negative margins to 0 (the card is
+   100% wide so there's no gutter to bleed into), and shrink the
+   padding to 32px 24px. The image keeps its 4/3 aspect, which
+   gives a 327×245px media block — clean, mobile-friendly, and
+   the heading + body + "MÁS INFORMACIÓN" link fit below in
+   ~180px. Total card height drops from 627px to ~480px (~25%
+   shorter), which means users see ~1.3 service cards per
+   viewport instead of 0.6. */
+@media (max-width: 767px) {
+  .service-card {
+    padding: 32px 24px;
+  }
+  .service-card__media {
+    margin: -32px -24px 24px;
+    width: calc(100% + 48px);
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0;
+  transition: opacity var(--d-base) var(--ease-main);
+}
+
+.service-card:hover::before {
+  opacity: 1;
+}
+
+.service-card__number {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: var(--c-grey);
+  margin-bottom: 32px;
+  display: block;
+}
+
+.service-card__heading {
+  font-size: clamp(16px, 1.5vw, 22px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--c-white);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.service-card__body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--c-grey);
+  margin-bottom: 32px;
+}
+
+.service-card__link {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--c-grey);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color var(--d-fast), gap var(--d-fast);
+}
+
+.service-card:hover .service-card__link {
+  color: var(--c-white);
+  gap: 14px;
+}
+
+/* Service card image media — only renders for services with img */
+.service-card__media {
+  position: relative;
+  margin: -48px -40px 32px;
+  width: calc(100% + 80px);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--c-superlight);
+}
+
+.service-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The transform is composed from two CSS custom properties:
+       --parallax-y  : set by the useParallaxImage hook on the
+                       parent .service-card__media
+       --img-scale   : 1.10 base (gives 10% margin top/bottom to
+                       absorb the parallax translate without ever
+                       exposing the container background as a
+                       white strip), 1.14 on :hover
+     The base scale of 1.10 is calibrated so that the maximum
+     parallax offset (strength=22 in this component) cannot reveal
+     the container's edge — at 22px translation, the 10% scaled
+     image still covers the underlying slot.
+     No transition on the base transform — the parallax hook
+     writes every frame and a transition would turn it into a
+     lagging smear. The grayscale transition stays smooth
+     (it animates filter, not transform). */
+  transform: translate3d(0, var(--parallax-y, 0), 0) scale(var(--img-scale, 1.10));
+  transform-origin: center center;
+  filter: grayscale(15%);
+}
+
+.service-card:hover .service-card__media img {
+  /* Hover just bumps --img-scale. The parallax is preserved. */
+  --img-scale: 1.14;
+  filter: grayscale(0%);
+  transition: filter var(--d-base) var(--ease-main);
+}
+
+@media (max-width: 567px) {
+  /* Tighten the service card further for very small viewports:
+     padding 24px 16px and the media block keeps the 16/9 aspect
+     (the card is now 100vw - 32px = 343px wide, so media is
+     343×193px). Margin negative values adjust to the new
+     padding so the image still bleeds to the card edges. */
+  .service-card {
+    padding: 24px 16px;
+  }
+  .service-card__media {
+    margin: -24px -16px 20px;
+    width: calc(100% + 32px);
+  }
+}
+
+/* ─── PROCESS ───────────────────────────────────────────── */
+.process {
+  padding: 120px 0;
+}
+
+.process__header {
+  margin-bottom: 80px;
+}
+
+.process__steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.process-step {
+  background: var(--c-bg);
+  padding: 56px 48px;
+  position: relative;
+}
+
+/* Mobile (jun-2026 audit): the desktop padding 56px 48px produces
+   a step card that's 327×~400px on a 375px viewport. The 48px
+   horizontal padding eats 96px of horizontal real estate and the
+   56px vertical padding adds 112px of dead space. On a phone the
+   step should feel more compact so users can scan the 3 steps
+   without scrolling past 1200px of dead air. */
+@media (max-width: 767px) {
+  .process-step {
+    padding: 36px 28px;
+  }
+  .process-step__number {
+    font-size: 56px;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .process-step {
+    padding: 28px 20px;
+  }
+}
+
+.process-step__number {
+  font-size: 72px;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  color: rgba(0, 0, 0, 0.06);
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.process-step__heading {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  color: var(--c-black);
+}
+
+.process-step__body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--c-dark-grey);
+}
+
+/* ─── TEAM ─────────────────────────────────────────────── */
+.team {
+  padding: 120px 0;
+  background: var(--c-ink-2);
+}
+
+.team__header {
+  margin-bottom: 80px;
+}
+
+.team__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.team-card {
+  position: relative;
+  overflow: hidden;
+  /* clip the parallax so portrait crops don't reveal edges */
+  border-radius: 6px;
+  background: var(--c-ink-2);
+  cursor: pointer;
+  will-change: transform;
+}
+
+.team-card__image {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  filter: grayscale(20%);
+  /* Composed transform: --parallax-y (from useParallaxImage on
+     .team-card) + --img-scale (1.10 base, 1.13 on :hover).
+     The base scale of 1.10 gives ~10% margin top/bottom to absorb
+     the parallax translate (strength=18 in this component) without
+     ever revealing the container background as a white strip. */
+  transform: translate3d(0, var(--parallax-y, 0), 0) scale(var(--img-scale, 1.10));
+  transform-origin: center center;
+}
+
+.team-card:hover .team-card__image {
+  --img-scale: 1.13;
+  filter: grayscale(0%);
+}
+
+.team-card__info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 32px 28px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+.team-card__name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-white);
+  margin-bottom: 4px;
+}
+
+.team-card__role {
+  font-size: 12px;
+  color: var(--c-grey);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ─── TESTIMONIALS ─────────────────────────────────────── */
+.testimonials {
+  padding: 120px 0;
+}
+
+.testimonials__header {
+  margin-bottom: 80px;
+}
+
+.testimonials__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.testimonial-card {
+  background: var(--c-white);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: border-color var(--d-fast), box-shadow var(--d-fast);
+}
+
+.testimonial-card:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+.testimonial-card__stars {
+  display: flex;
+  gap: 4px;
+  color: var(--c-black);
+}
+
+.testimonial-card__text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--c-dark-grey);
+  flex: 1;
+  font-style: italic;
+}
+
+.testimonial-card__author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.testimonial-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-superlight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-dark-grey);
+  flex-shrink: 0;
+}
+
+.testimonial-card__name {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-black);
+}
+
+/* ─── FAQ ───────────────────────────────────────────────── */
+.faq {
+  padding: 120px 0;
+  background: var(--c-ink-2);
+}
+
+.faq__header {
+  margin-bottom: 64px;
+}
+
+.faq__list {
+  max-width: 800px;
+}
+
+.faq-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.faq-item__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0;
+  font-size: clamp(15px, 1.4vw, 18px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-align: left;
+  color: var(--c-white);
+  gap: 16px;
+  transition: color var(--d-fast);
+}
+
+.faq-item__trigger:hover {
+  color: var(--c-grey);
+}
+
+.faq-item__trigger.open {
+  color: var(--c-grey);
+}
+
+.faq-item__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  color: var(--c-grey);
+  transition: transform var(--d-base) var(--ease-slide);
+}
+
+.faq-item__trigger.open .faq-item__icon {
+  transform: rotate(45deg);
+}
+
+.faq-item__body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--d-base) var(--ease-main);
+}
+
+.faq-item__body.open {
+  max-height: 400px;
+}
+
+.faq-item__body-inner {
+  padding-bottom: 28px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--c-grey);
+}
+
+/* ─── LOCATION ─────────────────────────────────────────── */
+.location {
+  padding: 120px 0;
+}
+
+.location__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.location__map {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.location__map iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.location__info {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.location__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.location__detail-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--c-grey);
+}
+
+.location__detail-value {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--c-black);
+  line-height: 1.6;
+}
+
+.location__detail-value a {
+  transition: color var(--d-fast);
+}
+
+.location__detail-value a:hover {
+  color: var(--c-grey);
+}
+
+.location__hours {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  padding-top: 8px;
+}
+
+.location__hours-day {
+  font-size: 13px;
+  color: var(--c-dark-grey);
+}
+
+.location__hours-time {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-black);
+  text-align: right;
+}
+
+/* ─── CONTACT FORM ─────────────────────────────────────── */
+.contact-section {
+  padding: 120px 0;
+  background: var(--c-superlight);
+}
+
+.contact-section__inner {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-section__heading {
+  margin-bottom: 16px;
+}
+
+.contact-section__subheading {
+  font-size: 15px;
+  color: var(--c-dark-grey);
+  margin-bottom: 48px;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-dark-grey);
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  background: var(--c-white);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-family: var(--font);
+  color: var(--c-black);
+  transition: border-color var(--d-fast), box-shadow var(--d-fast);
+  width: 100%;
+  appearance: none;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--c-black);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-submit {
+  margin-top: 8px;
+  width: 100%;
+  padding: 16px;
+  font-size: 11px;
+}
+
+.form-success {
+  text-align: center;
+  padding: 48px 0;
+}
+
+.form-success__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 24px;
+  color: var(--c-black);
+}
+
+.form-success__heading {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--c-black);
+  margin-bottom: 12px;
+}
+
+.form-success__body {
+  font-size: 15px;
+  color: var(--c-dark-grey);
+}
+
+/* ─── FOOTER ───────────────────────────────────────────── */
+.footer {
+  padding: 64px 0 40px;
+  background: var(--c-ink-2);
+  border-top: 1px solid rgba(0, 182, 236, 0.15);
+}
+
+.footer__top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 32px;
+}
+
+.footer__brand-name {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-white);
+  margin-bottom: 16px;
+}
+
+.footer__brand-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--c-grey);
+  max-width: 280px;
+}
+
+.footer__col-heading {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--c-white);
+  margin-bottom: 20px;
+}
+
+.footer__col-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer__col-link {
+  font-size: 13px;
+  color: var(--c-grey);
+  transition: color var(--d-fast);
+}
+
+.footer__col-link:hover {
+  color: var(--c-white);
+}
+
+.footer__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer__legal {
+  font-size: 11px;
+  color: var(--c-grey);
+}
+
+.footer__social {
+  display: flex;
+  gap: 16px;
+}
+
+.footer__social-link {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-grey);
+  transition: border-color var(--d-fast), color var(--d-fast);
+}
+
+.footer__social-link:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--c-white);
+}
+
+/* (WhyUs banner removed: the panoramic clinic-recepcion photo lacked
+   visual coherence with the rest of the site. Cards now sit directly
+   under the H2 — cleaner rhythm, less scroll dead weight.) */
+
+/* ─── LOCATION MEDIA (clinica-fachada image) ───────────── */
+.location__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: stretch;
+}
+
+.location__media {
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+  background: var(--c-superlight);
+}
+
+.location__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(15%);
+  /* Composed transform: --parallax-y + --img-scale. The CSS
+     hover below bumps --img-scale; the parallax hook writes
+     --parallax-y. Both compose into one transform so neither
+     overwrites the other.
+
+     Base scale of 1.13 (calibrated for strength=28, the highest
+     of the three parallax consumers) gives ~13% margin top/
+     bottom so the 28px translate can never expose the container
+     background as a white strip. */
+  transform: translate3d(0, var(--parallax-y, 0), 0) scale(var(--img-scale, 1.13));
+  transform-origin: center center;
+}
+
+.location__media:hover img {
+  --img-scale: 1.16;
+  filter: grayscale(0%);
+}
+
+.location__map {
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+}
+
+.location__map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  filter: grayscale(40%) contrast(1.05);
+  transition: filter var(--d-base) var(--ease-main);
+}
+
+.location__map:hover iframe {
+  filter: grayscale(0%) contrast(1);
+}
+
+/* Mobile (jun-2026 audit): the desktop location__map has
+   aspect-ratio 4/3 and the desktop location__media has 3/2.
+   On mobile the 1-column stack means each block (map, media,
+   info) takes 100% of the viewport width. 3/2 ratio on a 327px
+   wide map = 218px tall, which is fine for landscape. The
+   media image at 3/2 = 218px is also fine. But the LAYOUT puts
+   map + media side-by-side via grid even in mobile, so the
+   grid is forced 1fr at <768px (the existing rule) — that
+   works. The issue is the gap (80px) and the fact that the
+   .location__grid { gap: 40px } is duplicated in the file
+   (line 2103 and line 2153). On mobile the gap should drop
+   to 24px to keep the rhythm. */
+@media (max-width: 767px) {
+  .location__grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  /* Force map and media to a tighter aspect (4/3 instead of 3/2)
+     so they don't eat the whole viewport. */
+  .location__map,
+  .location__media {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+/* ─── RESPONSIVE ────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 24px;
+  }
+
+  .services__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .team__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .testimonials__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .footer__top {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  /* All section paddings are 120px top + 120px bottom on desktop —
+     too much dead air on mobile. 64px top + 56px bottom keeps the
+     rhythm without eating the viewport. Header offset is ~104px
+     so we need at least 24px of space above the heading for the
+     first section, but everything from #whyus onwards gets the
+     new tighter rhythm. */
+  .whyus,
+  .services,
+  .process,
+  .team,
+  .testimonials,
+  .faq,
+  .location {
+    padding: 64px 0;
+  }
+
+  .contact-section {
+    padding: 56px 0;
+  }
+
+  .header__nav {
+    display: none;
+  }
+
+  .whyus__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .services__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .process__steps {
+    grid-template-columns: 1fr;
+  }
+
+  .team__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .testimonials__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .footer__top {
+    grid-template-columns: 1fr;
+  }
+
+  .footer__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ─── REDUCED MOTION — a11y WCAG 2.1 (HERO-DEEP-DIVE issue #2) ── */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Stop all animations & transitions */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Reveal animations */
+  .aos {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Preloader: skip entirely (handled in JS too) */
+  .preloader {
+    display: none !important;
+  }
+
+  /* Hero: collapse the 200svh dwell to a single 100svh */
+  .hero {
+    height: 100svh !important;
+    min-height: 100svh !important;
+  }
+
+  .hero__bg,
+  .hero__overlay,
+  .hero__tint,
+  .hero__letters,
+  .hero__content,
+  .hero__scroll-hint {
+    position: absolute !important;
+    height: 100svh !important;
+  }
+
+  .hero__content {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero__letter {
+    transform: none !important;
+  }
+
+  /* Header: skip the top+sticky states, go straight to collapsed */
+  .header {
+    transition: none !important;
+  }
+
+  .header--top .header__background,
+  .header--sticky .header__background {
+    transform: translateY(0) !important;
+  }
+
+  /* Disable custom cursor transforms (not present in this project, but defensive) */
+  *,
+  *::before,
+  *::after {
+    animation-name: none !important;
+  }
+}
