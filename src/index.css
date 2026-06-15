@@ -91,43 +91,26 @@
 }
 
 /* ─── PRELOADER — Portal de Castilla brand plate split ── */
-/* The preloader is a full-screen ink-2 backdrop with a single
-   composite element: the brand plate (blue rounded outer frame +
-   two cream inner panels "PORTAL" | "CASTILLA" with a small "DE"
-   in the middle of the blue band). The plate is split exactly
-   at the horizontal center: a left half ("PORTAL" + "D") and a
-   right half ("E" + "CASTILLA"). On `phase==='fade-out'` the
-   two halves slide apart in opposite directions with a slight
-   rotateY to suggest 3D depth, and the backdrop fades out so
-   the hero reveals underneath.
 
-   No raster image, no AI marks — pure HTML+CSS, scales perfectly
-   on any viewport, and the split is pixel-exact (no off-by-one
-   seam). */
+/* Brand colors. Defined here (not in :root) because they're only used
+   by the preloader. If a future section needs them, promote to :root
+   in the TOKENS block above. */
 :root {
-  /* Brand colors (matched to the logo plate) */
   --plate-blue: #5BA8DC;
   --plate-cream: #ECECEC;
-  --plate-bg: #F5F0E6;
-  /* page bg behind the plate (cream) */
+  --plate-bg: #F5F0E6; /* Cream background of the loading screen */
   --plate-de: #FFFFFF;
-  /* "D" / "E" letters in the blue band */
 }
 
 .preloader {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: var(--plate-bg);
+  background: transparent !important; /* Container is transparent so the 3D scene behind shows through */
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* Match the page bg so the fade-out is seamless (no white→cream
-     flash on transition). */
-  /* Depth context: enables rotateY on the halves during the
-     open animation. The 1500px gives a natural ~30° perspective
-     without exaggerating distortion. */
   perspective: 1500px;
   perspective-origin: 50% 50%;
 }
@@ -146,6 +129,7 @@
   transform: translateX(-100%);
   will-change: transform;
   animation: preloader-progress-fill 1.5s linear forwards;
+  z-index: 10000; /* Drawn above the shutter halves so it's never hidden by them */
 }
 
 @keyframes preloader-progress-fill {
@@ -159,143 +143,158 @@
 }
 
 .preloader--exiting .preloader__progress {
-  transition: transform 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+  transition: transform 1.2s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.4s ease;
   transform: translateX(0);
+  opacity: 0;
 }
 
-/* ── The plate ──
-   The whole plate is a single blue rounded rectangle. Inside
-   it, two cream inner panels (PORTAL | CASTILLA) sit side by
-   side as "windows", with a thin blue strip between them
-   where the "D"/"E" letters live.
-
-   The plate is split at the exact horizontal center (50%/50)
-   into two halves that slide apart on fade-out. Each half is
-   itself a blue rounded rectangle (the outer corners of the
-   plate are split between the two halves: top-left + bottom-left
-   on the left half, top-right + bottom-right on the right half). */
+/* ── The plate (expanded to invisible fullscreen container) ──
+   The plate wrapper is no longer a visible card — it's an
+   invisible fullscreen layer that contains the two shutter halves.
+   The visible brand plate (blue rounded rect + cream panels) is
+   painted INSIDE the shutter halves via .preloader__half::before
+   and absolutely-positioned .preloader__panel. */
 .preloader__plate {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  width: min(960px, 92vw);
-  height: 220px;
-  position: relative;
-  /* Subtle drop shadow under the plate */
-  filter: drop-shadow(0 12px 32px rgba(14, 26, 36, 0.10)) drop-shadow(0 4px 12px rgba(14, 26, 36, 0.06));
-  /* Initial entrance: scale up from 0.94 + fade in (1.5s, matches
-     the loading window). */
-  animation: preloader-plate-in 1.5s cubic-bezier(0.25, 0.74, 0.22, 0.99) forwards;
+  width: 100vw;  /* Full viewport width */
+  height: 100vh; /* Full viewport height */
+  position: absolute;
+  inset: 0;
 }
 
-@keyframes preloader-plate-in {
+/* Force the plate to stay visible (not fade) during the slide-out
+   so the shutter halves carry the visual transition. The original
+   fade-out is now handled by the .preloader--exiting backdrop rule
+   below (which sets background: transparent). */
+.preloader--exiting .preloader__plate {
+  opacity: 1 !important;
+  transition: none;
+}
+
+/* ── Each shutter half: a giant 50vw cream panel ──
+   The two halves cover the entire viewport in cream. On exit they
+   slide apart in opposite directions with a subtle rotateY, taking
+   the cream away with them and revealing the 3D scene underneath.
+   The blue brand rect is painted ON TOP via ::before (anchored to
+   the seam) so the brand identity stays visible during the slide. */
+.preloader__half {
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: var(--plate-bg); /* Cream — same as loading bg */
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0) rotateY(0);
+  transition: transform 1.4s cubic-bezier(0.86, 0, 0.07, 1),
+              opacity 1.4s cubic-bezier(0.86, 0, 0.07, 1);
+}
+
+/* Fullscreen shutters have no rounded outer corners. */
+.preloader__half--left { border-radius: 0; }
+.preloader__half--right { border-radius: 0; }
+
+/* 🧠 RECREACIÓN DE LA PLACA AZUL CENTRAL:
+   Pseudo-element painting the rounded brand rect on the seam side
+   of each shutter. Left shutter's ::before anchors to its RIGHT
+   edge (the seam) and keeps its left-side rounded corners. Right
+   shutter's ::before mirrors: anchored to its LEFT edge (seam),
+   rounded corners on the right. Together they form the full blue
+   plate that stays visible during the slide-out. */
+.preloader__half::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(480px, 46vw); /* Half the original plate width */
+  height: 220px; /* Original plate height */
+  background: var(--plate-blue);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+  filter: drop-shadow(0 12px 32px rgba(14, 26, 36, 0.08));
+  animation: preloader-plate-graphic-in 1.5s cubic-bezier(0.25, 0.74, 0.22, 0.99) forwards;
+}
+
+/* Left half of the plate aligns to the RIGHT edge of the left panel */
+.preloader__half--left::before {
+  right: 0;
+  border-radius: 18px 0 0 18px; /* Keeps the rounded corners on the LEFT */
+  transform-origin: right center;
+}
+
+/* Right half of the plate aligns to the LEFT edge of the right panel */
+.preloader__half--right::before {
+  left: 0;
+  border-radius: 0 18px 18px 0; /* Keeps the rounded corners on the RIGHT */
+  transform-origin: left center;
+}
+
+@keyframes preloader-plate-graphic-in {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: translateY(-50%) scale(0.94);
   }
 
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(-50%) scale(1);
   }
 }
 
-/* ── Each half: a blue rounded rectangle with one cream panel
-   "window" cut out. The blue shows through around the panel
-   (top, bottom, and the outer side of the half), forming the
-   thin frame the brand plate needs. The seam side has no
-   padding so the two halves meet flush. */
-.preloader__half {
-  flex: 1 1 50%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: var(--plate-blue);
-  /* Subtle inner bevel to suggest a real frame */
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.18),
-    /* top inner highlight */
-    inset 0 -3px 0 rgba(0, 0, 0, 0.08);
-  /* bottom inner shadow */
-  /* GPU promotion for the slide animation */
-  will-change: transform, opacity;
-  /* Pre-state (loading): halves are closed (no transform yet) */
-  transform: translate3d(0, 0, 0) rotateY(0);
-  transition: transform 1.4s cubic-bezier(0.86, 0, 0.07, 1),
-    opacity 1.4s cubic-bezier(0.86, 0, 0.07, 1);
-}
-
-/* Left half: outer rounded corners on the LEFT, square on the
-   right (the seam). 18px radius = brand-matching rounded ends. */
-.preloader__half--left {
-  border-radius: 18px 0 0 18px;
-}
-
-/* Right half: outer rounded corners on the RIGHT, square on the
-   left (the seam). */
-.preloader__half--right {
-  border-radius: 0 18px 18px 0;
-}
-
-/* ── Exit (phase === 'fade-out') ──
-   Left half slides off to the LEFT, with a slight rotateY so the
-   right edge pulls back in 3D. Right half mirrors. */
+/* ── Exit animation: the two shutter halves slide apart ──
+   The blue plate (::before) stays painted on each half and
+   slides WITH it, maintaining the brand identity during the
+   transition. The halves reach opacity 0.95 just before fully
+   sliding off, then become invisible. */
 .preloader--exiting .preloader__half--left {
-  transform: translate3d(-100%, 0, 0) rotateY(28deg);
+  transform: translate3d(-100%, 0, 0) rotateY(14deg);
   transform-origin: 100% 50%;
-  opacity: 0;
 }
 
 .preloader--exiting .preloader__half--right {
-  transform: translate3d(100%, 0, 0) rotateY(-28deg);
+  transform: translate3d(100%, 0, 0) rotateY(-14deg);
   transform-origin: 0% 50%;
-  opacity: 0;
 }
 
-/* The whole plate also fades out slightly so the seam doesn't
-   leave a hard vertical line at the center. */
-.preloader--exiting .preloader__plate {
-  transition: opacity 1.2s cubic-bezier(0.7, 0, 0.3, 1);
-  opacity: 0;
+.preloader--exiting .preloader__half {
+  opacity: 0.95;
+  transition: transform 1.35s cubic-bezier(0.86, 0, 0.07, 1),
+              opacity 1.35s cubic-bezier(0.86, 0, 0.07, 1);
 }
 
 /* ── Inner cream panels (PORTAL | CASTILLA) ──
-   "Windows" inside the blue half. Use margin to leave a thin
-   blue frame around them (top, bottom, outer side, AND the
-   seam side). The seam-side margin creates a wider blue strip
-   down the middle of the plate where the D/E letters sit. */
+   Absolutely positioned within each shutter half, aligned to
+   the center vertical axis. The width is the plate width minus
+   the 65px (25px outer + 40px seam) so the panels fit inside
+   the blue rect with the proper frame on all sides. */
 .preloader__panel {
-  width: calc(100% - 50px);
-  /* leave 25px on each outer side */
-  height: calc(100% - 36px);
-  /* leave 18px top + 18px bottom */
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(min(480px, 46vw) - 65px);
+  height: 184px;
   background: var(--plate-cream);
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Subtle inner bevel on the panel */
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.6),
     inset 0 -2px 0 rgba(0, 0, 0, 0.04);
+  z-index: 2;
+  animation: preloader-plate-graphic-in 1.5s cubic-bezier(0.25, 0.74, 0.22, 0.99) forwards;
 }
 
-/* Left half panel: 25px margin on the LEFT (outer) side to
-   create the thin blue outer frame. 40px margin on the RIGHT
-   (seam) side to create a thicker blue strip down the middle
-   (where the "D" letter sits, with room to bring it close to
-   the seam). */
 .preloader__half--left .preloader__panel {
-  margin: 18px 40px 18px 25px;
+  right: 40px; /* Gap from the central seam */
   border-radius: 4px 0 0 4px;
 }
 
-/* Right half panel: 25px margin on the RIGHT (outer) side.
-   40px margin on the LEFT (seam) side to mirror the blue
-   middle strip. */
 .preloader__half--right .preloader__panel {
-  margin: 18px 25px 18px 40px;
+  left: 40px; /* Gap from the central seam */
   border-radius: 0 4px 4px 0;
 }
 
@@ -310,20 +309,15 @@
   line-height: 1;
 }
 
-/* ── "D" and "E" letters in the blue strip between the panels ──
-   The "D" lives inside the left half (sits ON the right edge =
-   the seam), the "E" mirrors on the right half. When the halves
-   are closed, the D and E sit close together forming "DE" in
-   the center — exactly like the logo. Both letters are
-   absolutely positioned on the blue middle strip, painted in
-   the same cream color as the page background so they read as
-   "carved out" of the blue frame. */
+/* ── "D" and "E" letters in the central seam ──
+   Painted in the same cream as the page bg so they read as
+   "carved out" of the blue band. Both animate in with the
+   same keyframe as the blue plate. */
 .preloader__de {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--plate-bg);
-  /* cream — same as page background */
+  color: var(--plate-bg); /* Same cream as the panel background */
   font-size: clamp(0.95rem, 2vw, 1.6rem);
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -331,57 +325,37 @@
   user-select: none;
   z-index: 3;
   background: transparent;
+  animation: preloader-plate-graphic-in 1.5s cubic-bezier(0.25, 0.74, 0.22, 0.99) forwards;
 }
 
-/* "D" lives in the left half, at the right edge of the
-   PORTAL panel (which is the seam). Sits 2px from the right
-   edge of the half (almost at the seam) so the gap between
-   D and E is just ~4px. */
-.preloader__de--left {
-  right: 2px;
-}
+.preloader__de--left { right: 2px; }
+.preloader__de--right { left: 2px; }
 
-/* "E" mirrors: 2px from the left edge of the half. Together
-   with .preloader__de--left this puts D and E close together
-   forming "DE" with a small visual gap (~4px) between them,
-   centered in the 80px blue middle strip. */
-.preloader__de--right {
-  left: 2px;
-}
-
-/* ── Backdrop fade-out ── */
+/* ── Backdrop fade-out: container goes transparent so the
+   underlying page (hero + 3D) shows through. No transition here
+   because the shutter halves already provide the visual transition. */
 .preloader--exiting {
-  /* Note: opacity is animated on the plate (above) and the
-     halves; the backdrop stays at full opacity until the halves
-     have fully slid away (~1.0s into the 1.2s transition), then
-     fades so the hero is revealed smoothly underneath. */
-  background: var(--plate-bg);
-  transition: background-color 0.4s ease 0.9s;
-  background-color: transparent;
+  background: transparent;
+  transition: none;
 }
 
-/* ── Mobile ── */
+/* ── Mobile adaptation ── */
 @media (max-width: 567px) {
-  .preloader__plate {
+  .preloader__half::before {
     height: 140px;
+    width: min(240px, 46vw);
   }
 
-  .preloader__word {
-    font-size: 1.05rem;
-    letter-spacing: 0.03em;
+  .preloader__panel {
+    height: 110px;
+    width: calc(min(240px, 46vw) - 35px);
   }
 
-  .preloader__de {
-    font-size: 0.9rem;
-  }
+  .preloader__half--left .preloader__panel { right: 25px; }
+  .preloader__half--right .preloader__panel { left: 25px; }
 
-  .preloader__half {
-    border-radius: 12px 0 0 12px;
-  }
-
-  .preloader__half--right {
-    border-radius: 0 12px 12px 0;
-  }
+  .preloader__word { font-size: 1.05rem; letter-spacing: 0.03em; }
+  .preloader__de { font-size: 0.9rem; }
 }
 
 /* ── a11y: skip animations for reduced-motion users ── */
