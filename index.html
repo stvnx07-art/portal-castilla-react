@@ -34,6 +34,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;700&family=Onest:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- 2026-06-15: Google Analytics 4 (mismo account que Gorbeia).
+         Snippet inline recomendado por Google para SPAs (Vite + React):
+         dataLayer + gtag() init + config. ID de medición:
+         G-R0XYKQETKW (Portal de Castilla Web, dentro de la cuenta
+         "Gorbeia Padel & Spa"). Usado para medir adquisición desde
+         links con UTMs (p.ej. WhatsApp con
+         ?utm_source=whatsapp&utm_medium=dm&utm_campaign=propuesta-...). -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R0XYKQETKW"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-R0XYKQETKW');
+    </script>
+
     <!-- Preload critical images (above-the-fold) so they don't depend on lazy-load + scroll -->
     <link rel="preload" as="image" href="/img/hero-bg.jpg" />
     <link rel="preload" as="image" href="/img/service-implantes.jpg" />
